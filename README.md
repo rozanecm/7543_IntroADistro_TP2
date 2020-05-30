@@ -6,5 +6,7 @@ La cátedra proveerá el framework a través del siguiente repositorio: [https:/
 
 La herramienta comcast para simular distintas condiciones de la red esta disponible en la siguiente página web: [https://github.com/tylertreat/comcast](https://github.com/tylertreat/comcast).
 
+[Aquí](README_framework.md) está disponible el archivo README correspondiente al framework dado por la cátedra.
+
 # Informe
 El informe se redacta en [Google docs](https://docs.google.com/document/d/1q0q5_-lDr0N07dROPfxd0CdPBd4SWc8seS3IEiPc3sI/edit?usp=sharing).
