@@ -1,13 +1,21 @@
 import socket                   # Import socket module
+import os
 
 def download_file(server_address, name, dst):
   print('TCP: download_file({}, {}, {})'.format(server_address, name, dst))
   
+  make_storage_dir(dst)
+
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPv4 + TCP
   host = server_address[0]                              # IP
   port = server_address[1]                              # Puerto
 
-  s.connect((host, port))
+  try:
+      s.connect((host, port))
+  except ConnectionRefusedError:
+      print("apparently, server has not been started yet.")
+      return 0
+
   print ('Connected to server')
   print ('Path: ', dst)
   phrase = "D:" + name
@@ -29,3 +37,7 @@ def download_file(server_address, name, dst):
   s.close()
   print ('Connection closed')
   #pass
+
+def make_storage_dir(dst):
+    if(not os.path.exists(os.path.dirname(dst))):
+        os.mkdir(os.path.dirname(dst))
