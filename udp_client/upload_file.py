@@ -18,6 +18,11 @@ def upload_file(server_address, src, name):
   # TODO: Implementar UDP upload_file client
   print('UDP: upload_file({}, {}, {})'.format(server_address, src, name))
 
+  if(not os.path.exists(src)):
+      print("Please enter valid file to upload")
+      return 0
+
+
   #hago esto medio mock para triggerear acciones y probar mi servidor.
 
   own_address = ("127.0.0.1", 2020)
