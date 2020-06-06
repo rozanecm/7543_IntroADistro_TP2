@@ -2,6 +2,7 @@
 import argparse
 import socket
 import time
+import os
 
 from utils.md5_hash import md5 as checksum_func
 from utils.constants import CHUNK_SIZE
@@ -19,6 +20,9 @@ def get_timestamp():
 
 def start_server(server_address, storage_dir):
   print('UDP: start_server({}, {})'.format(server_address, storage_dir))
+
+  # si no existe dir, lo crea
+  make_storage_dir(storage_dir)
 
   # Creación del socket UDP.
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -137,3 +141,8 @@ def recieve_size(sock, client_addr, file, attempt):
 
 def download_file():
   pass
+
+def make_storage_dir(storage_dir):
+    if(not os.path.isdir(storage_dir)):
+        os.mkdir(storage_dir)
+
