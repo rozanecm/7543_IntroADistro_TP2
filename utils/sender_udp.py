@@ -10,8 +10,12 @@ class Sender:
         self.receiver_confirmed_end_of_transmission = False #cuando se manda msj de fin de transmision, el receiver debe confirmar que lo recibio
 
     def send_message(self, msg):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.send_message(msg, sock)
+
+    def send_message(self, msg, sock):
         print("working with msg:", msg)
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock = sock
         num_of_chunks = self.get_num_of_chunks_for_msg(msg, self.chunk_size)
         chunks = self.msg_to_chunks(msg, self.chunk_size, num_of_chunks)
         self.acks = list(range(1,num_of_chunks+1))

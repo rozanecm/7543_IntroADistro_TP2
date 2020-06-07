@@ -9,7 +9,12 @@ class Receiver:
     def receive_message(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(self.server_address)
+        self.receive_message(socket)
 
+    # PRE: binded socket
+    def receive_message(self, socket):
+        self.sock = socket
+        
         chunks = {}     # K: seq_num; V: chunk data
 
         end_of_transmission = False
