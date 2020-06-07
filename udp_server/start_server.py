@@ -3,6 +3,7 @@ import argparse
 import socket
 import time
 import os
+import signal, sys
 
 from utils.md5_hash import md5 as checksum_func
 from utils.constants import CHUNK_SIZE
@@ -22,6 +23,10 @@ def get_timestamp():
 
 def start_server(server_address, storage_dir):
   print('UDP: start_server({}, {})'.format(server_address, storage_dir))
+  make_storage_dir(storage_dir)
+
+  # Sin esto no tenemos como salir del loop de forma linda
+  signal.signal(signal.SIGINT, sigint_handler)
 
   # si no existe dir, lo crea
   make_storage_dir(storage_dir)
@@ -57,4 +62,11 @@ def download_file():
 def make_storage_dir(storage_dir):
     if(not os.path.isdir(storage_dir)):
         os.mkdir(storage_dir)
+
+def make_storage_dir(storage_dir):
+    if(not os.path.isdir(storage_dir)):
+        os.mkdir(storage_dir)
+
+def sigint_handler(sig, frame):
+    sys.exit(0)
 
