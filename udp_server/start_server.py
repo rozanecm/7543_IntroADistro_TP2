@@ -39,13 +39,20 @@ def start_server(server_address, storage_dir):
 
     # Saco cualquier timeout que pueda tener.
     sock.settimeout(None)
+   
+    my_rec = Receiver(server_address, 1024)
+    data = my_rec.recieve_string(sock)
 
-    # Recibo un comando de un cliente, puede ser upload o decode.
-    data, addr = sock.recvfrom(CHUNK_SIZE)
-
-    if not (data.decode().startswith(UPLOAD_COMMAND) or data.decode().startswith(DOWNLOAD_COMMAND)):
+    try:
+      if not (data.decode().startswith(UPLOAD_COMMAND) or data.decode().startswith(DOWNLOAD_COMMAND)):
+        continue
+    except:
+      # puse este try por si le llega a llegar un mensaje binario que quedó colgado y falla al hacer el decode
+      # simplemente descarta el mensaje y espera al siguiente.
       continue
-
+    
+    print("Recieved {}".format(data))
+    
     command = data.decode("utf-8").split(':')
 
     filename = os.path.join(storage_dir, command[1])
@@ -58,9 +65,8 @@ def start_server(server_address, storage_dir):
 
   sock.close()
 
-def upload_file(sock, storage_dir, server_address, filename):
-  my_rec = Receiver(server_address, 1024)
-  my_rec.receive_message(sock, filename)
+def upload_file(sock, storage_dir, server_address, filename, reciever):
+  reciever.receive_message(sock, filename)
 
 def download_file():
   pass
