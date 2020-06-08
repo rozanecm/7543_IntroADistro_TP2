@@ -39,6 +39,8 @@ def start_server(server_address, storage_dir):
 
     # Saco cualquier timeout que pueda tener.
     sock.settimeout(None)
+
+    print("\nWaiting for next instruction...")
    
     my_rec = Receiver(server_address, 1024)
     data = my_rec.recieve_string(sock)
