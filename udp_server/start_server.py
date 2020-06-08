@@ -43,7 +43,7 @@ def start_server(server_address, storage_dir):
     print("\nWaiting for next instruction...")
    
     my_rec = Receiver(server_address, 1024)
-    data = my_rec.recieve_string(sock)
+    data = my_rec.recieve_string(sock, "CMD")
 
     try:
       if not (data.decode().startswith(UPLOAD_COMMAND) or data.decode().startswith(DOWNLOAD_COMMAND)):

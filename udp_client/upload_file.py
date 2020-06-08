@@ -43,11 +43,11 @@ def upload_file(server_address, src, name):
   print(command)
 
   my_sen = Sender(server_address, 1024)
-  my_sen.send_message(command.encode(), sock)
+  my_sen.send_message(command.encode(), sock, "CMD")
 
   f = open(src, "rb")   
   #f = open("./files/cover.jpg", "rb")   
-  my_sen.send_message(f.read(), sock)
+  my_sen.send_message(f.read(), sock, "BDY")
 
   f.close()
   

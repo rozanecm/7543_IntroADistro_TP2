@@ -7,8 +7,13 @@ class Receiver:
         self.chunk_size = chunk_size
 
     # PRE: binded socket
-    def receive_message(self, socket, filename):
-        chunks = self.receive(socket)
+    def receive_message(self, socket, filename, msg_type):
+        """
+        msg_type: specify whether you're receiving a command ("CMD") or the
+        body of a msg ("BDY"). This serves the purpose to detect the correct
+        end of transmission.
+        """
+        chunks = self.receive(socket, msg_type)
         return self.get_chunks_together(chunks, filename)
 
     def num_to_fix_len_string(self, num):
@@ -27,11 +32,16 @@ class Receiver:
         print("comparing", hashlib.md5(msg).hexdigest(), checksum)
         return hashlib.md5(msg).hexdigest() == checksum
 
-    def recieve_string(self, socket):
-        return self.get_chunks_together_in_string(self.receive(socket))
+    def recieve_string(self, socket, msg_type):
+        """
+        msg_type: specify whether you're receiving a command ("CMD") or the
+        body of a msg ("BDY"). This serves the purpose to detect the correct
+        end of transmission.
+        """
+        return self.get_chunks_together_in_string(self.receive(socket, msg_type))
 
     # PRE: binded socket
-    def receive(self, socket):
+    def receive(self, socket, msg_type):
         self.sock = socket  
         
         chunks = {}     # K: seq_num; V: chunk data
@@ -46,7 +56,7 @@ class Receiver:
             checksum = data[4:4+32].decode()
             msg = data[4+32:]
             print("seq_number", seq_number, "msg", msg, "checksum", checksum)
-            if(seq_number == 0):
+            if(seq_number == 0 and msg == msg_type):
                 end_of_transmission = True
                 break
             chunks[seq_number] = msg

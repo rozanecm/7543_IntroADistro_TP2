@@ -13,14 +13,18 @@ class Sender:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.send_message(msg, sock)
 
-    def send_message(self, msg, sock):
+    def send_message(self, msg, sock, msg_type):
+        """
+        msg_type: specify if you're sending a command or the body of a msg.
+        msg_type can be either "CMD" or "BDY"
+        """
         print("working with msg:", msg)
         self.sock = sock
         num_of_chunks = self.get_num_of_chunks_for_msg(msg, self.chunk_size)
         chunks = self.msg_to_chunks(msg, self.chunk_size, num_of_chunks)
         self.acks = list(range(1,num_of_chunks+1))
 
-        send_thread = threading.Thread(target=self.send_file, args=(self.sock,chunks,self.acks,self.server_address))
+        send_thread = threading.Thread(target=self.send_file, args=(self.sock,chunks,self.acks,self.server_address,msg_type))
         send_thread.start()
         recv_thread = threading.Thread(target=self.receive_acks, args=(self.sock,self.acks,))
         recv_thread.start()
@@ -31,7 +35,7 @@ class Sender:
     def num_to_fix_len_string(self, num):
         return str(num).zfill(4)
 
-    def send_file(self, sock, chunks, acks, server_address):
+    def send_file(self, sock, chunks, acks, server_address, msg_type):
         while acks:
             print(acks)
             for i in acks:
@@ -40,7 +44,8 @@ class Sender:
         # when finished sending file, send eof msg
         while(not self.receiver_confirmed_end_of_transmission):
             print('sending ack eof')
-            sock.sendto("0000".encode(), server_address)
+            sock.sendto(self.assemble_msg(msg_type,0), server_address)
+            #sock.sendto(("0000"+msg_type).encode(), server_address)
 
     def assemble_msg(self, chunk, seq_number):
         seq = self.num_to_fix_len_string(seq_number) 
