@@ -6,14 +6,9 @@ class Receiver:
         self.server_address = server_address
         self.chunk_size = chunk_size
 
-    def receive_message(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind(self.server_address)
-        self.receive_message(socket)
-
     # PRE: binded socket
-    def receive_message(self, socket):
-        self.sock = socket
+    def receive_message(self, socket, filename):
+        self.sock = socket  
         
         chunks = {}     # K: seq_num; V: chunk data
 
@@ -38,14 +33,14 @@ class Receiver:
             print("so far:",chunks)
 
         print(chunks)
-        return self.get_chunks_together(chunks)
+        return self.get_chunks_together(chunks, filename)
 
     def num_to_fix_len_string(self, num):
         return str(num).zfill(4)
 
-    def get_chunks_together(self, chunks):
+    def get_chunks_together(self, chunks, filename):
         chunk_ids = list(chunks.keys())
-        with open("./aux/newtest.txt", 'wb') as file:
+        with open(filename, 'wb') as file:
             for id in chunk_ids:
                 file.write(chunks.pop(id))
                 # msg += chunks.pop(id)

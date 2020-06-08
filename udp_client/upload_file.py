@@ -24,7 +24,6 @@ def upload_file(server_address, src, name):
       print("Please enter valid file to upload")
       return 0
 
-
   own_address = ("127.0.0.1", 2020)
 
   f = open(src, "rb")
@@ -39,12 +38,17 @@ def upload_file(server_address, src, name):
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   sock.bind(own_address)
 
-  sock.sendto(str(UPLOAD_COMMAND).encode(), server_address)
+  command = "{}:{}".format(UPLOAD_COMMAND, name)
+  
+  print(command)
+  
+  sock.sendto(str(command).encode(), server_address)
 
   my_sen = Sender(server_address, 1024)
-  f = open("./files/test.txt", "rb")   
+  f = open(src, "rb")   
   #f = open("./files/cover.jpg", "rb")   
   my_sen.send_message(f.read(), sock)
+
   f.close()
   
   sock.close()

@@ -41,20 +41,26 @@ def start_server(server_address, storage_dir):
     sock.settimeout(None)
 
     # Recibo un comando de un cliente, puede ser upload o decode.
-    command, addr = sock.recvfrom(CHUNK_SIZE)
+    data, addr = sock.recvfrom(CHUNK_SIZE)
 
-    if command.decode() == UPLOAD_COMMAND: 
-      upload_file(sock, storage_dir, server_address)
+    if not (data.decode().startswith(UPLOAD_COMMAND) or data.decode().startswith(DOWNLOAD_COMMAND)):
+      continue
 
-    if command.decode() == DOWNLOAD_COMMAND: 
+    command = data.decode("utf-8").split(':')
+
+    filename = os.path.join(storage_dir, command[1])
+
+    if command[0] == UPLOAD_COMMAND: 
+      upload_file(sock, storage_dir, server_address, filename)
+
+    if command[0] == DOWNLOAD_COMMAND: 
       download_file(sock)
 
   sock.close()
 
-def upload_file(sock, storage_dir, server_address):
+def upload_file(sock, storage_dir, server_address, filename):
   my_rec = Receiver(server_address, 1024)
-  my_rec.receive_message(sock)
-  pass
+  my_rec.receive_message(sock, filename)
 
 def download_file():
   pass
