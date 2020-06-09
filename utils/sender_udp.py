@@ -37,14 +37,12 @@ class Sender:
 
     def send_file(self, sock, chunks, acks, server_address, msg_type):
         while acks:
-            print(acks)
             for i in acks:
-                print("sending", chunks[i])
                 sock.sendto(self.assemble_msg(chunks[i],i), server_address)
         # when finished sending file, send eof msg
-        while(not self.receiver_confirmed_end_of_transmission):
-            print('sending ack eof')
-            sock.sendto(self.assemble_msg(msg_type,0), server_address)
+        #while(not self.receiver_confirmed_end_of_transmission):
+        #    print('sending ack eof')
+        sock.sendto(self.assemble_msg(msg_type.encode(),0), server_address)
             #sock.sendto(("0000"+msg_type).encode(), server_address)
 
     def assemble_msg(self, chunk, seq_number):
@@ -58,14 +56,14 @@ class Sender:
 
     def receive_acks(self, sock, acks):
         while acks:
-            print("in receiv acks")
             data, addres = sock.recvfrom(3+4)  #3:"ACK"; 4: fixed size seq. num
             data = data.decode()
             try:
+                # if duplicate ack received, it'll try to remove inexisteint
+                # element. Prevent with this catch
                 acks.remove(int(data[3:]))
             except ValueError:
-                print("try to remove", data[3:], "resulted in error")
-        #    print("removed", data[3:], "from acks")
+                continue
 
         data, addres = sock.recvfrom(3+4)  #3:"ACK"; 4: fixed size seq. num
         print(data.decode())

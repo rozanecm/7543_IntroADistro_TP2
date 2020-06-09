@@ -45,30 +45,31 @@ def start_server(server_address, storage_dir):
     my_rec = Receiver(server_address, 1024)
     data = my_rec.recieve_string(sock, "CMD")
 
-    try:
-      if not (data.decode().startswith(UPLOAD_COMMAND) or data.decode().startswith(DOWNLOAD_COMMAND)):
-        continue
-    except:
+    #try:
+    #  if not (data.decode().startswith(UPLOAD_COMMAND) or data.decode().startswith(DOWNLOAD_COMMAND)):
+    #    continue
+    #except:
       # puse este try por si le llega a llegar un mensaje binario que quedó colgado y falla al hacer el decode
       # simplemente descarta el mensaje y espera al siguiente.
-      continue
+    #  continue
     
     print("Recieved {}".format(data))
     
-    command = data.decode("utf-8").split(':')
+    command = data.split(':')
+    # command = data.decode("utf-8").split(':')
 
     filename = os.path.join(storage_dir, command[1])
 
-    if command[0] == UPLOAD_COMMAND: 
-      upload_file(sock, storage_dir, server_address, filename)
+    if command[0] == UPLOAD_COMMAND:
+      upload_file(sock, storage_dir, server_address, filename, my_rec)
 
     if command[0] == DOWNLOAD_COMMAND: 
       download_file(sock)
 
   sock.close()
 
-def upload_file(sock, storage_dir, server_address, filename, reciever):
-  reciever.receive_message(sock, filename)
+def upload_file(sock, storage_dir, server_address, filename, receiver):
+  print(receiver.receive_message(sock, filename, "BDY"))
 
 def download_file():
   pass
