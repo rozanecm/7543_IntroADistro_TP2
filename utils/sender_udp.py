@@ -3,79 +3,65 @@ import threading
 import math
 import hashlib
 
+from utils.constants import CHUNK_SIZE
+
 class Sender:
-    def __init__(self, server_address, chunk_size):
+    def __init__(self, server_address, sock):
         self.server_address = server_address
-        self.chunk_size = chunk_size
-        self.receiver_confirmed_end_of_transmission = False #cuando se manda msj de fin de transmision, el receiver debe confirmar que lo recibio
+        self.sock = sock
+        # binding is neede to receive data
+        self.sock.bind(("127.0.0.1",2020))
 
     def send_message(self, msg):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.send_message(msg, sock)
-
-    def send_message(self, msg, sock, msg_type):
         """
-        msg_type: specify if you're sending a command or the body of a msg.
-        msg_type can be either "CMD" or "BDY"
+        :param msg: must be bin, not text
+        :return: void
         """
         print("working with msg:", msg)
-        self.sock = sock
-        num_of_chunks = self.get_num_of_chunks_for_msg(msg, self.chunk_size)
-        chunks = self.msg_to_chunks(msg, self.chunk_size, num_of_chunks)
-        self.acks = list(range(1,num_of_chunks+1))
+        num_of_chunks = self.get_num_of_chunks_for_msg(msg)
+        chunks = self.msg_to_chunks(msg, num_of_chunks)
+        acks = list(range(num_of_chunks+1))
 
-        send_thread = threading.Thread(target=self.send_file, args=(self.sock,chunks,self.acks,self.server_address,msg_type))
-        send_thread.start()
-        recv_thread = threading.Thread(target=self.receive_acks, args=(self.sock,self.acks,))
-        recv_thread.start()
-
-        send_thread.join()
-        recv_thread.join()
-
-    def num_to_fix_len_string(self, num):
-        return str(num).zfill(4)
-
-    def send_file(self, sock, chunks, acks, server_address, msg_type):
         while acks:
             for i in acks:
-                sock.sendto(self.assemble_msg(chunks[i],i), server_address)
-        # when finished sending file, send eof msg
-        #while(not self.receiver_confirmed_end_of_transmission):
-        #    print('sending ack eof')
-        sock.sendto(self.assemble_msg(msg_type.encode(),0), server_address)
-            #sock.sendto(("0000"+msg_type).encode(), server_address)
+                self.sock.sendto(self.assemble_msg(chunks[i],i), self.server_address)
+                data, address = self.sock.recvfrom(4 + 3)  # 4: fixed size seq. num; 3:"ACK"
+                data = data.decode()
+                try:
+                    # if duplicate ack received, it'll try to remove inexisteint
+                    # element. Prevent with this catch
+                    acks.remove(int(data[:4]))
+                except ValueError:
+                    continue
+
+
+    @staticmethod
+    def num_to_fix_len_string(num):
+        return str(num).zfill(4)
 
     def assemble_msg(self, chunk, seq_number):
         seq = self.num_to_fix_len_string(seq_number) 
         ha = hashlib.md5(chunk).hexdigest()
-        #ha = hashlib.md5(str(chunk).encode()).hexdigest()
+        # ha = hashlib.md5(str(chunk).encode()).hexdigest()
         result = seq.encode() + ha.encode() + chunk
-        #result = seq + ha + chunk.decode()
+        # result = seq + ha + chunk.decode()
         return result
-        #return result.encode()
+        # return result.encode()
 
-    def receive_acks(self, sock, acks):
-        while acks:
-            data, addres = sock.recvfrom(3+4)  #3:"ACK"; 4: fixed size seq. num
-            data = data.decode()
-            try:
-                # if duplicate ack received, it'll try to remove inexisteint
-                # element. Prevent with this catch
-                acks.remove(int(data[3:]))
-            except ValueError:
-                continue
+    def get_num_of_chunks_for_msg(self, msg):
+        return math.ceil(len(msg) / CHUNK_SIZE)
 
-        data, addres = sock.recvfrom(3+4)  #3:"ACK"; 4: fixed size seq. num
-        print(data.decode())
-        self.receiver_confirmed_end_of_transmission = True
-
-    def get_num_of_chunks_for_msg(self, msg, chunk_size):
-        return math.ceil(len(msg) / chunk_size)
-
-    def msg_to_chunks(self, msg, chunk_size, num_of_chunks):
+    def msg_to_chunks(self, msg, num_of_chunks):
+        """
+        :param msg: binary msg
+        :param num_of_chunks: num of chunks to be sent
+        :return: dict with message split to chunks, where k = seq. number and v = chunk.
+        seq n. 0 transmits number of packets needed to transmit the message
+        """
         d = {}
         for i in range(1, num_of_chunks + 1):
-            d[i] = msg[:chunk_size]
-            msg = msg[chunk_size:]
+            d[i] = msg[:CHUNK_SIZE]
+            msg = msg[CHUNK_SIZE:]
+        d[0] = str(num_of_chunks).encode()
         return d
 

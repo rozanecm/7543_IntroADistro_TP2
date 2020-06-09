@@ -1,86 +1,70 @@
-
-import argparse
 import socket
 import time
 import os
 import signal, sys
-
-from utils.md5_hash import md5 as checksum_func
-from utils.constants import CHUNK_SIZE
-from utils.constants import END_CONNECTION
-from utils.constants import START
-from utils.constants import NACK
-from utils.constants import UPLOAD_COMMAND
-from utils.constants import DOWNLOAD_COMMAND
 
 from utils.receiver_udp import Receiver
 
 MAX_RETX = 3
 SOCKET_TIMEOUT = 10
 
+
 def get_timestamp():
-  return int(round(time.time()*1000))
+    return int(round(time.time() * 1000))
+
 
 def start_server(server_address, storage_dir):
-  print('UDP: start_server({}, {})'.format(server_address, storage_dir))
-  make_storage_dir(storage_dir)
+    print('UDP: start_server({}, {})'.format(server_address, storage_dir))
+    make_storage_dir(storage_dir)
 
-  # Sin esto no tenemos como salir del loop de forma linda
-  signal.signal(signal.SIGINT, sigint_handler)
+    port = server_address[1]  # Puerto
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # IPv4 + TCP
+    host = server_address[0]  # IP
+    s.bind((host, port))
 
-  # si no existe dir, lo crea
-  make_storage_dir(storage_dir)
+    print('Server listening....')
 
-  # Creación del socket UDP.
-  sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-  sock.bind(server_address)
+    signal.signal(signal.SIGINT, sigint_handler)
 
-  while True:
+    while True:
+        conn = Receiver(s)
+        data = conn.receive_message()
+        print("data:", data)
+        command = data.decode("utf-8").split(':')
+        print('Command received: ', command)
 
-    # Saco cualquier timeout que pueda tener.
-    sock.settimeout(None)
+        filename = os.path.join(storage_dir, command[1])
+        print('Path: ', filename)
+        if command[0] == "D":
+            file = open(filename, 'rb')
+            print('File opened')
+            line = file.read(1024)
+            while (line):
+                try:
+                    conn.send(line)
+                except (ConnectionResetError, BrokenPipeError):
+                    line = False
+                # print('Sent ',repr(line))
+                line = file.read(1024)
 
-    print("\nWaiting for next instruction...")
-   
-    my_rec = Receiver(server_address, 1024)
-    data = my_rec.recieve_string(sock, "CMD")
+            print('Done sending')
+        if command[0] == "U":
+            with open(filename, 'wb') as file:
+                print('File opened')
+                file.write(conn.receive_message())
+                file.close()
 
-    #try:
-    #  if not (data.decode().startswith(UPLOAD_COMMAND) or data.decode().startswith(DOWNLOAD_COMMAND)):
-    #    continue
-    #except:
-      # puse este try por si le llega a llegar un mensaje binario que quedó colgado y falla al hacer el decode
-      # simplemente descarta el mensaje y espera al siguiente.
-    #  continue
-    
-    print("Recieved {}".format(data))
-    
-    command = data.split(':')
-    # command = data.decode("utf-8").split(':')
+            print('Done receiving')
 
-    filename = os.path.join(storage_dir, command[1])
+        print('File closed')
+    s.close()
+    print('Connection closed')
 
-    if command[0] == UPLOAD_COMMAND:
-      upload_file(sock, storage_dir, server_address, filename, my_rec)
-
-    if command[0] == DOWNLOAD_COMMAND: 
-      download_file(sock)
-
-  sock.close()
-
-def upload_file(sock, storage_dir, server_address, filename, receiver):
-  print(receiver.receive_message(sock, filename, "BDY"))
-
-def download_file():
-  pass
 
 def make_storage_dir(storage_dir):
-    if(not os.path.isdir(storage_dir)):
+    if (not os.path.isdir(storage_dir)):
         os.mkdir(storage_dir)
 
-def make_storage_dir(storage_dir):
-    if(not os.path.isdir(storage_dir)):
-        os.mkdir(storage_dir)
 
 def sigint_handler(sig, frame):
     sys.exit(0)
