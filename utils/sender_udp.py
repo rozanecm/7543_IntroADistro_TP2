@@ -22,6 +22,7 @@ class Sender:
         chunks = self.msg_to_chunks(msg, num_of_chunks)
         acks = list(range(num_of_chunks+1))
 
+        prev_timeout = self.sock.gettimeout()
         self.sock.settimeout(1)
         # self.sock.setblocking(0)
         while acks:
@@ -41,6 +42,7 @@ class Sender:
                 except ValueError:
                     continue
         print("just sent msg:", msg)
+        self.sock.settimeout(prev_timeout)
 
 
     @staticmethod

@@ -5,3 +5,5 @@ NACK = "nack"
 
 UPLOAD_COMMAND = "upload"
 DOWNLOAD_COMMAND = "download"
+
+CLIENT_ADDRESS = ("127.0.0.1",2020)

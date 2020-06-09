@@ -3,7 +3,9 @@ import time
 import os
 import signal, sys
 
+from utils.constants import CLIENT_ADDRESS
 from utils.receiver_udp import Receiver
+from utils.sender_udp import Sender
 
 MAX_RETX = 3
 SOCKET_TIMEOUT = 10
@@ -42,16 +44,11 @@ def start_server(server_address, storage_dir):
         filename = os.path.join(storage_dir, command[1])
         print('Path: ', filename)
         if command[0] == "D":
+            sender = Sender(CLIENT_ADDRESS, s)
             file = open(filename, 'rb')
             print('File opened')
-            line = file.read(1024)
-            while (line):
-                try:
-                    conn.send(line)
-                except (ConnectionResetError, BrokenPipeError):
-                    line = False
-                # print('Sent ',repr(line))
-                line = file.read(1024)
+            msg = file.read()
+            sender.send_message(msg)
 
             print('Done sending')
         if command[0] == "U":
