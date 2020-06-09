@@ -10,7 +10,7 @@ class Sender:
         self.server_address = server_address
         self.sock = sock
         # binding is neede to receive data
-        self.sock.bind(("127.0.0.1",2020))
+        # self.sock.bind(("127.0.0.1",2020))
 
     def send_message(self, msg):
         """
@@ -22,17 +22,25 @@ class Sender:
         chunks = self.msg_to_chunks(msg, num_of_chunks)
         acks = list(range(num_of_chunks+1))
 
+        self.sock.settimeout(1)
+        # self.sock.setblocking(0)
         while acks:
-            for i in acks:
+            aux_acks = acks[:]
+            for i in aux_acks:
                 self.sock.sendto(self.assemble_msg(chunks[i],i), self.server_address)
-                data, address = self.sock.recvfrom(4 + 3)  # 4: fixed size seq. num; 3:"ACK"
-                data = data.decode()
+                print("just sent:", self.assemble_msg(chunks[i],i))
+                try:
+                    data, address = self.sock.recvfrom(4 + 3)  # 4: fixed size seq. num; 3:"ACK"
+                    # data = data.decode()
+                except socket.timeout:
+                    break
                 try:
                     # if duplicate ack received, it'll try to remove inexisteint
                     # element. Prevent with this catch
                     acks.remove(int(data[:4]))
                 except ValueError:
                     continue
+        print("just sent msg:", msg)
 
 
     @staticmethod

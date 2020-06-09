@@ -40,6 +40,7 @@ class Receiver:
         total_num_of_pkts_to_receive_set = False
 
         while(not end_of_transmission):
+            print("receiving")
             data, address = self.sock.recvfrom(4+CHUNK_SIZE+32)  # 4: seq num; 5: msg size; 32: checksum
             #data = data.decode()
             #print("received", data)
@@ -55,7 +56,7 @@ class Receiver:
                 total_num_of_pkts_to_receive = int(msg.decode())
                 print("received num of pkts:", total_num_of_pkts_to_receive)
                 total_num_of_pkts_to_receive_set = True
-            else:
+            elif not seq_number in chunks:
                 num_of_pkts_received += 1
                 chunks[seq_number] = msg
 
