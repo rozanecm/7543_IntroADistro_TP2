@@ -1,4 +1,6 @@
 import hashlib
+import socket
+
 from utils.constants import CHUNK_SIZE
 
 class Receiver:
@@ -39,9 +41,21 @@ class Receiver:
         end_of_transmission = False
         total_num_of_pkts_to_receive_set = False
 
-        while(not end_of_transmission):
+        retries = {}
+        die = False
+
+        prev_timeout = self.sock.gettimeout()
+        self.sock.settimeout(10)
+
+        while(not end_of_transmission and not die):
             print("receiving")
-            data, address = self.sock.recvfrom(4+CHUNK_SIZE+32)  # 4: seq num; 5: msg size; 32: checksum
+            try:
+                data, address = self.sock.recvfrom(4+CHUNK_SIZE+32)  # 4: seq num; 5: msg size; 32: checksum
+            except socket.timeout:
+                print("Time out waiting for client.")
+                die = True
+                break
+
             #data = data.decode()
             #print("received", data)
             seq_number = int(data[:4].decode())
@@ -63,7 +77,8 @@ class Receiver:
             if total_num_of_pkts_to_receive_set:
                 if total_num_of_pkts_to_receive == num_of_pkts_received:
                     end_of_transmission = True
-
+        
+        self.sock.settimeout(prev_timeout)
         return chunks
 
     def get_chunks_together_in_string(self, chunks):

@@ -38,14 +38,29 @@ def start_server(server_address, storage_dir):
         conn = Receiver(s)
         data = conn.receive_message()
         print("data:", data)
-        command = data.decode("utf-8").split(':')
-        print('Command received: ', command)
+        
+        try:
+            command = data.decode("utf-8").split(':')
+            print('Command received: ', command)
+        except:
+            #not a valid command.
+            continue
+        
+        if(not validate_command(command[0])):
+            continue
 
         filename = os.path.join(storage_dir, command[1])
         print('Path: ', filename)
         if command[0] == "D":
             sender = Sender(CLIENT_ADDRESS, s)
-            file = open(filename, 'rb')
+            try:
+                file = open(filename, 'rb')
+            except:
+                print('File request does not exist in the server.')
+                sender.send_message("")
+                #if file does not exist, do not fail.
+                continue
+
             print('File opened')
             msg = file.read()
             sender.send_message(msg)
@@ -62,6 +77,8 @@ def start_server(server_address, storage_dir):
 
         print('File closed')
 
+def validate_command(command):
+    return command.startswith("D") or command.startswith("U")
 
 def make_storage_dir(storage_dir):
     if (not os.path.isdir(storage_dir)):

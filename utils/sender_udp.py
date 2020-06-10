@@ -2,8 +2,9 @@ import socket
 import threading
 import math
 import hashlib
-
 from utils.constants import CHUNK_SIZE
+
+MAX_RTX = 10
 
 class Sender:
     def __init__(self, server_address, sock):
@@ -22,10 +23,13 @@ class Sender:
         chunks = self.msg_to_chunks(msg, num_of_chunks)
         acks = list(range(num_of_chunks+1))
 
+        retries = {}
+        die = False
+
         prev_timeout = self.sock.gettimeout()
         self.sock.settimeout(1)
         # self.sock.setblocking(0)
-        while acks:
+        while acks and not die:
             aux_acks = acks[:]
             for i in aux_acks:
                 self.sock.sendto(self.assemble_msg(chunks[i],i), self.server_address)
@@ -34,12 +38,19 @@ class Sender:
                     data, address = self.sock.recvfrom(4 + 3)  # 4: fixed size seq. num; 3:"ACK"
                     # data = data.decode()
                 except socket.timeout:
+                    if not i in retries:
+                        retries[i] = 1
+                    else:
+                        retries[i] += 1
+                    if(retries[i] > MAX_RTX):
+                        die = True
+
                     break
                 try:
                     # if duplicate ack received, it'll try to remove inexisteint
                     # element. Prevent with this catch
                     acks.remove(int(data[:4]))
-                except ValueError:
+                except ValueError:  
                     continue
         print("just sent msg:", msg)
         self.sock.settimeout(prev_timeout)
